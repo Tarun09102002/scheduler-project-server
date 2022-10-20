@@ -5,9 +5,9 @@ const Event = require('../models/event-model');
 
 exports.register_user = async (req, res) => {
     console.log("here")
-    const { Username, Password } = req.body;
+    const { Username, Email, Name, Password } = req.body;
     const hashedPassword = await bcrypt.hash(Password, 10);
-    await User.create({ username: Username, password: hashedPassword }).catch(err => console.log(err));
+    await User.create({ username: Username, password: hashedPassword, name: Name, email: Email }).catch(err => console.log(err));
     res.send('User created');
 }
 
@@ -30,6 +30,20 @@ exports.login_user = async (req, res) => {
             console.log('invalid')
             res.status(200).send({ message: 'unsuccessful' });
         }
+    }
+}
+
+exports.google_login = async (req, res) => {
+    console.log(req.body)
+    const { Username, Name, Email, Password } = req.body;
+    const user = await User.findOne({ username: Username }).catch(err => console.log(err));
+    if (user) {
+        res.status(200).send({ message: 'successful', token: user._id });
+    }
+    else {
+        const hashedPassword = await bcrypt.hash(Password, 10);
+        await User.create({ username: Username, password: hashedPassword, name: Name, email: Email }).catch(err => console.log(err));
+        res.status(200).send({ message: 'successful', token: user._id });
     }
 }
 

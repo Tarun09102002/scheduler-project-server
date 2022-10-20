@@ -13,13 +13,6 @@ const EventModel = new mongoose.Schema({
     user: { type: Schema.Types.ObjectId }
 })
 
-// EventModel.post('findOneAndDelete', async function (doc) {
-//     console.log('here')
-//     if (doc) {
-//         console.log('here 2')
-//         const user = await User.findByIdAndUpdate(doc.user, { $pull: { events: doc._id } })
-//         await user.save();
-//     }
-// })
+
 const model = mongoose.model("Event", EventModel);
 module.exports = model

@@ -40,11 +40,13 @@ app.post('/register', appController.register_user);
 
 app.post('/login', appController.login_user);
 
+app.post('/googlelogin', appController.google_login);
+
 app.delete('/delete/:id', appController.delete_event);
 
 app.get('/tasks/:userid', appController.fetch_user_events);
 
-app.post('/edit/tasks/:id', appController.edit_event);
+app.put('/edit/tasks/:id', appController.edit_event);
 
 app.post('/add/tasks/:id', appController.add_event);
 
