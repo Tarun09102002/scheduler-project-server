@@ -1,0 +1,19 @@
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+const User = require("./user-model");
+
+const MeetModel = new mongoose.Schema({
+    start: { type: String, required: true },
+    end: { type: String, required: true },
+    title: { type: String, required: true },
+    description: { type: String, required: false },
+    color: { type: String, required: true },
+    date: { type: String, required: true },
+    completed: { type: Boolean, required: true, default: false },
+    link: { type: String, required: true },
+    createdby: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    participants: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+})
+
+const model = mongoose.model("Meet", MeetModel);
+module.exports = model
