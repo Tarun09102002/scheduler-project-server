@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/user-model');
 const Event = require('../models/event-model');
 const Meet = require('../models/meet-model');
+const Notification = require('../models/notification-model');
 
 
 exports.register_user = async (req, res) => {
@@ -80,7 +81,8 @@ exports.delete_event = async (req, res) => {
         if (meet) {
             const user = await User.findByIdAndUpdate(meet.createdby, { $pull: { meets: meet._id } }).catch(err => console.log(err));
             for (let i = 0; i < meet.participants.length; i++) {
-                const user = await User.findByIdAndUpdate(meet.participants[i], { $pull: { meets: meet._id }, $pull: { pendingMeets: meet._id } }).catch(err => console.log(err));
+                const notification = await Notification.findOneAndDelete({ receiver: meet.participants[i] }).catch(err => console.log(err));
+                const user = await User.findByIdAndUpdate(meet.participants[i], { $pull: { meets: meet._id, pendingMeets: meet._id, notifications: notification } }).catch(err => console.log(err));
             }
 
             await Meet.findByIdAndDelete(id).catch(err => console.log(err));
@@ -155,8 +157,6 @@ exports.add_meet = async (req, res) => {
             availableUsers.add(byemail.id)
         }
     }
-    console.log(unavailableUsers)
-    console.log(availableUsers)
     if (unavailableUsers.length > 0) {
         res.status(200).send({ message: 'unsuccessful', unavailableUsers });
     }
@@ -165,11 +165,17 @@ exports.add_meet = async (req, res) => {
         const user = await User.findById(id).catch(err => console.log(err));
         user.meets.push(meet.id);
         await user.save();
+
         availableUsers.forEach(async (participant) => {
             const userParticipant = await User.findById(participant).catch(err => console.log(err));
             userParticipant.pendingMeets.push(meet.id);
-            userParticipant.notifications.push({ type: 'meet', meet: meet.id });
+            const notification = await Notification.create({ sender: user.id, reciever: participant, type: 'meet', meet: meet.id, message: `${user.name} has invited you to a meet` }).catch(err => console.log(err));
+            console.log(userParticipant.notifications)
+            // console.log(notification)
+            userParticipant.notifications.push(notification.id);
             await userParticipant.save();
+            console.log(notification.id)
+            // await User.findByIdAndUpdate(participant, { $push: { notifications: notification.id } }).catch(err => console.log(err));
         })
         res.status(200).send({ message: 'successful' });
     }
@@ -182,17 +188,20 @@ exports.update_user = async (req, res) => {
 
 exports.fetch_specific_event = async (req, res) => {
     const { id } = req.params;
-    let task = null;
-    task = await Event.findById(id).catch(err => console.log(err));
+    // let task = null;
+    const task = await Event.findById(id).catch(err => console.log(err));
     if (!task) {
-        task = await Meet.findById(id).catch(err => console.log(err));
-    }
-    console.log(id)
-    if (!task) {
-        res.status(404).send('Event not found');
+        const meet = await Meet.findById(id).populate('participants').catch(err => console.log(err));
+        if (!meet) {
+            res.status(404).send('Event not found');
+        }
+        else {
+            console.log(meet)
+            res.status(200).send({ task: meet });
+        }
     }
     else {
-        res.status(200).send(task);
+        res.status(200).send({ task: task });
     }
 }
 
@@ -240,11 +249,15 @@ exports.accept_meet_invite = async (req, res) => {
     const user = await User.findById(userid);
     console.log(user)
     if (user) {
-        const meet = await Meet.findById(meetId);
+        const meet = await Meet.findById(meetId).populate('createdby').populate('participants').catch(err => console.log(err));
+        const notification = await Notification.findOne({ meet: meetId, sender: meet.createdby.id, reciever: userid }).catch(err => console.log(err));
+        console.log(notification)
         console.log(meetId)
         if (meet) {
-            await User.findByIdAndUpdate(userid, { $pull: { pendingMeets: meetId, notifications: { type: 'meet', meet: meetId } }, $push: { meets: meetId } }).catch(err => console.log(err));
+            const newNotification = await Notification.create({ sender: userid, reciever: meet.createdby.id, type: 'invite', message: `${user.name} has accepted your meet invite` }).catch(err => console.log(err));
+            await User.findByIdAndUpdate(userid, { $pull: { pendingMeets: meetId, notifications: notification.id }, $push: { meets: meetId } }).catch(err => console.log(err));
             console.log(user.pendingMeets)
+            await User.findByIdAndUpdate(meet.createdby.id, { $push: { notifications: newNotification.id } }).catch(err => console.log(err));
             return res.status(200).send('Meet accepted');
         }
         else {
@@ -277,20 +290,43 @@ exports.reject_meet_invite = async (req, res) => {
 
 exports.fetch_user_notifications = async (req, res) => {
     const { userid } = req.params;
-    const user = await User.findById(userid);
+    const user = await User.findById(userid).catch(err => console.log(err));
     if (user) {
+        console.log(290)
         // const notifications = await Notification.find({ _id: { $in: user.notifications } }).populate('meet').populate('event').catch(err => console.log(err));
-        const notifications = await User.findById(userid)
+        // const notifications = await User.findById(userid).populate('notifications')
+        const notifications = await Notification.find({ _id: { $in: user.notifications } }).populate('meet').populate('sender').catch(err => console.log(err));
         const tempNotification = []
-        for (let i = 0; i < notifications.notifications.length; i++) {
-            const notification = notifications.notifications[i];
-            if (notification.type === 'meet') {
-                const meet = await Meet.findById(notification.meet).populate('createdby').catch(err => console.log(err));
-                tempNotification.push({ type: 'meet', meet })
-            }
-        }
-        console.log(tempNotification)
-        res.status(200).send(tempNotification);
+        console.log(notifications)
+        // for (let i = 0; i < notifications.notifications.length; i++) {
+        //     const notification = notifications.notifications[i];
+        //     if (notification.type === 'meet') {
+        //         const meet = await Meet.findById(notification.meet).populate('createdby').catch(err => console.log(err));
+        //         tempNotification.push({ type: 'meet', meet })
+        //     }
+        //     else if (notification.type === 'invite') {
+        //         tempNotification.push(notification)
+        //     }
+        // }
+        // console.log(tempNotification)
+        // console.log(user.notifications)
+        res.status(200).send(notifications);
+    }
+    else {
+        res.status(404).send('User not found');
+    }
+}
+
+exports.clear_notification = async (req, res) => {
+    const { userid } = req.params;
+    const { notifId } = req.body;
+    const user = await User.findById(userid);
+    console.log(user.notifications)
+    if (user) {
+        const user = await User.findByIdAndUpdate(userid, { $pull: { notifications: notifId } }).catch(err => console.log(err));
+        console.log(user.notifications)
+        await Notification.findByIdAndDelete(notifId).catch(err => console.log(err));
+        res.status(200).send('Notification cleared');
     }
     else {
         res.status(404).send('User not found');

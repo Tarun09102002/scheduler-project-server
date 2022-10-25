@@ -93,3 +93,5 @@ app.post('/meet/accept/:userid', appController.accept_meet_invite);
 app.post('/meet/reject/:userid', appController.reject_meet_invite);
 
 app.get('/user/notifications/:userid', appController.fetch_user_notifications);
+
+app.post('/user/clearnotification/:userid', appController.clear_notification);
