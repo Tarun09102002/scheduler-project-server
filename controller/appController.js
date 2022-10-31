@@ -82,10 +82,14 @@ exports.delete_event = async (req, res) => {
             const user = await User.findByIdAndUpdate(meet.createdby, { $pull: { meets: meet._id } }).catch(err => console.log(err));
             for (let i = 0; i < meet.participants.length; i++) {
                 const notification = await Notification.findOneAndDelete({ receiver: meet.participants[i] }).catch(err => console.log(err));
-                const user = await User.findByIdAndUpdate(meet.participants[i], { $pull: { meets: meet._id, pendingMeets: meet._id, notifications: notification } }).catch(err => console.log(err));
+                const user = await User.findByIdAndUpdate(meet.participants[i], { $pull: { meets: meet._id, pendingMeets: meet._id, notifications: notification } })
+                    .catch(err => console.log(err));
             }
 
             await Meet.findByIdAndDelete(id).catch(err => console.log(err));
+        }
+        else {
+            res.send('Event not found');
         }
     }
     res.send('Event deleted');
@@ -123,7 +127,20 @@ exports.fetch_user_events = async (req, res) => {
 
 exports.edit_event = async (req, res) => {
     const { id } = req.params;
-    const event = await Event.findByIdAndUpdate(id, req.body).catch(err => console.log(err));
+    console.log(req.body)
+    const event = await Event.findById(id).catch(err => console.log(err));
+    if (event) {
+        await Event.findByIdAndUpdate(id, req.body).catch(err => console.log(err));
+    }
+    else {
+        const meet = await Meet.findById(id).catch(err => console.log(err));
+        if (meet) {
+            await Meet.findByIdAndUpdate(id, req.body).catch(err => console.log(err));
+        }
+        else {
+            res.send('Event not found');
+        }
+    }
     await event.save();
     res.send('Event updated');
 }

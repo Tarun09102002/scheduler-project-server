@@ -61,37 +61,35 @@ app.get('/', (req, res) => {
     res.send('Hello World');
 });
 
-app.post('/register', upload.single('Image'), appController.register_user);
+app.post('/register', upload.single('Image'), appController.register_user); //atman
 
-app.post('/login', appController.login_user);
+app.post('/login', appController.login_user); //atman
 
-app.post('/googlelogin', appController.google_login);
+app.post('/googlelogin', appController.google_login); //atman
 
-app.get('/image/profile/:filename', appController.get_profile_image);
+app.get('/image/profile/:filename', appController.get_profile_image); //tarun
 
-app.get('/user/image/:id', appController.get_image_src);
+app.get('/user/image/:id', appController.get_image_src); //tarun
 
-// app.post('/user/profile', upload.single('image'), appController.update_user);
+app.delete('/delete/:id', appController.delete_event); //vyom
 
-app.delete('/delete/:id', appController.delete_event);
+app.get('/tasks/:userid', appController.fetch_user_events); //vyom
 
-app.get('/tasks/:userid', appController.fetch_user_events);
+app.put('/edit/tasks/:id', appController.edit_event); //atman
 
-app.put('/edit/tasks/:id', appController.edit_event);
+app.post('/add/tasks/:id', appController.add_event); //atman
 
-app.post('/add/tasks/:id', appController.add_event);
+app.post('/add/meet/:id', appController.add_meet); //atman 6
 
-app.post('/add/meet/:id', appController.add_meet);
+app.get('/specifictask/:id', appController.fetch_specific_event); //tarun
 
-app.get('/specifictask/:id', appController.fetch_specific_event);
+app.put('/complete/:id', appController.complete_event); //tarun
 
-app.put('/complete/:id', appController.complete_event);
+app.get('/meet/invites/:userid', appController.fetch_user_meet_invites); //vyom
 
-app.get('/meet/invites/:userid', appController.fetch_user_meet_invites);
+app.post('/meet/accept/:userid', appController.accept_meet_invite); //vyom
+app.post('/meet/reject/:userid', appController.reject_meet_invite); //vyom 5
 
-app.post('/meet/accept/:userid', appController.accept_meet_invite);
-app.post('/meet/reject/:userid', appController.reject_meet_invite);
+app.get('/user/notifications/:userid', appController.fetch_user_notifications); //tarun
 
-app.get('/user/notifications/:userid', appController.fetch_user_notifications);
-
-app.post('/user/clearnotification/:userid', appController.clear_notification);
+app.post('/user/clearnotification/:userid', appController.clear_notification); //tarun 6
