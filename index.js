@@ -69,11 +69,11 @@ app.post('/googlelogin', appController.google_login); //atman
 
 app.get('/image/profile/:filename', appController.get_profile_image); //tarun
 
-app.get('/user/image/:id', appController.get_image_src); //tarun
+app.get('/user/image/:token', appController.get_image_src); //tarun
 
 app.delete('/delete/:id', appController.delete_event); //vyom
 
-app.get('/tasks/:userid', appController.fetch_user_events); //vyom
+app.get('/tasks/:token', appController.fetch_user_events); //vyom
 
 app.put('/edit/tasks/:id', appController.edit_event); //atman
 
@@ -85,11 +85,11 @@ app.get('/specifictask/:id', appController.fetch_specific_event); //tarun
 
 app.put('/complete/:id', appController.complete_event); //tarun
 
-app.get('/meet/invites/:userid', appController.fetch_user_meet_invites); //vyom
+app.get('/meet/invites/:token', appController.fetch_user_meet_invites); //vyom
 
-app.post('/meet/accept/:userid', appController.accept_meet_invite); //vyom
-app.post('/meet/reject/:userid', appController.reject_meet_invite); //vyom 5
+app.post('/meet/accept/:token', appController.accept_meet_invite); //vyom
+app.post('/meet/reject/:token', appController.reject_meet_invite); //vyom 5
 
-app.get('/user/notifications/:userid', appController.fetch_user_notifications); //tarun
+app.get('/user/notifications/:token', appController.fetch_user_notifications); //tarun
 
-app.post('/user/clearnotification/:userid', appController.clear_notification); //tarun 6
+app.post('/user/clearnotification/:token', appController.clear_notification); //tarun 6

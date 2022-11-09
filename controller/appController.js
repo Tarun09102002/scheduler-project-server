@@ -3,6 +3,7 @@ const User = require('../models/user-model');
 const Event = require('../models/event-model');
 const Meet = require('../models/meet-model');
 const Notification = require('../models/notification-model');
+const jwt = require('jsonwebtoken');
 
 
 exports.register_user = async (req, res) => {
@@ -23,9 +24,16 @@ exports.register_user = async (req, res) => {
 }
 
 exports.get_image_src = async (req, res) => {
-    const { id } = req.params
-    const user = await User.findById(id).catch(err => console.log(err));
-    res.status(200).send(user.imageUrl);
+    const { token } = req.params
+    const userId = jwt.verify(token, process.env.JWT_SECRET).id
+    const user = await User.findById(userId).catch(err => console.log(err));
+    console.log(user)
+    if (user) {
+        res.status(200).send(user.imageUrl);
+    }
+    else {
+        res.status(200).send('');
+    }
 }
 
 exports.get_profile_image = async (req, res) => {
@@ -44,7 +52,8 @@ exports.login_user = async (req, res) => {
         const validPassword = await bcrypt.compare(Password, user.password);
         if (validPassword) {
             console.log('here')
-            res.status(200).send({ message: 'successful', token: user.id });
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
+            res.status(200).send({ message: 'successful', token: token });
             // res.send({ message: 'successful', token: user.id }, 200);
         }
         else {
@@ -60,12 +69,14 @@ exports.google_login = async (req, res) => {
     console.log(ImageUrl)
     const user = await User.findOne({ username: Username }).catch(err => console.log(err));
     if (user) {
-        res.status(200).send({ message: 'successful', token: user._id });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
+        res.status(200).send({ message: 'successful', token: token });
     }
     else {
         const hashedPassword = await bcrypt.hash(Password, 10);
         const userNew = await User.create({ username: Username, password: hashedPassword, name: Name, email: Email, imageUrl: ImageUrl }).catch(err => console.log(err));
-        res.status(200).send({ message: 'successful', token: userNew._id });
+        const token = jwt.sign({ id: userNew._id }, process.env.JWT_SECRET)
+        res.status(200).send({ message: 'successful', token: token });
     }
 }
 
@@ -96,9 +107,10 @@ exports.delete_event = async (req, res) => {
 }
 
 exports.fetch_user_events = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
+    const id = jwt.verify(token, process.env.JWT_SECRET).id;
     const { date, month } = req.query;
-    const user = await User.findById(userid)
+    const user = await User.findById(id)
         .populate('events')
         .populate('meets')
         .catch(err => console.log(err));
@@ -157,6 +169,7 @@ exports.add_event = async (req, res) => {
 
 exports.add_meet = async (req, res) => {
     const { id } = req.params;
+    const userId = jwt.verify(id, process.env.JWT_SECRET).id;
     const { participants } = req.body;
     const availableUsers = new Set();
     const unavailableUsers = []
@@ -178,8 +191,8 @@ exports.add_meet = async (req, res) => {
         res.status(200).send({ message: 'unsuccessful', unavailableUsers });
     }
     else {
-        const meet = await Meet.create({ ...req.body, createdby: id, participants: Array.from(availableUsers) }).catch(err => console.log(err));
-        const user = await User.findById(id).catch(err => console.log(err));
+        const meet = await Meet.create({ ...req.body, createdby: userId, participants: Array.from(availableUsers) }).catch(err => console.log(err));
+        const user = await User.findById(userId).catch(err => console.log(err));
         user.meets.push(meet.id);
         await user.save();
 
@@ -246,7 +259,8 @@ exports.complete_event = async (req, res) => {
 }
 
 exports.fetch_user_meet_invites = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
+    const userid = jwt.verify(token, process.env.JWT_SECRET).id;
     const user = await User.findById(userid);
     if (user) {
         const meets = await Meet.find({ _id: { $in: user.pendingMeets } }).populate('createdby').populate('participants').catch(err => console.log(err));
@@ -259,10 +273,11 @@ exports.fetch_user_meet_invites = async (req, res) => {
 }
 
 exports.accept_meet_invite = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
     const { meetId } = req.body;
     console.log('here')
-    console.log(userid)
+    console.log(token)
+    const userid = jwt.verify(token, process.env.JWT_SECRET).id;
     const user = await User.findById(userid);
     console.log(user)
     if (user) {
@@ -287,8 +302,9 @@ exports.accept_meet_invite = async (req, res) => {
 }
 
 exports.reject_meet_invite = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
     const { meetid } = req.body;
+    const userid = jwt.verify(token, process.env.JWT_SECRET).id;
     const user = await User.findById(userid);
     if (user) {
         const meet = await Meet.findById(meetid);
@@ -306,7 +322,8 @@ exports.reject_meet_invite = async (req, res) => {
 }
 
 exports.fetch_user_notifications = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
+    const userid = jwt.verify(token, process.env.JWT_SECRET).id;
     const user = await User.findById(userid).catch(err => console.log(err));
     if (user) {
         console.log(290)
@@ -335,8 +352,9 @@ exports.fetch_user_notifications = async (req, res) => {
 }
 
 exports.clear_notification = async (req, res) => {
-    const { userid } = req.params;
+    const { token } = req.params;
     const { notifId } = req.body;
+    const userid = jwt.verify(token, process.env.JWT_SECRET).id;
     const user = await User.findById(userid);
     console.log(user.notifications)
     if (user) {
